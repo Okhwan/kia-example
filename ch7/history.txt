@@ -1,0 +1,77 @@
+docker build -t docker.io/ohlee/fortune:args
+docker push docker.io/ohlee/fortune:args
+docker run -it docker.io/ohlee/fortune:args
+
+// Passing by args
+kubectl create -f fortune-pod-args.yaml
+kubectl port-forward fortune 8080:80
+curl localhost:8080
+
+// Read system env values
+kubectl delete pod fortune
+kubectl create -f fortune-pod-env.yaml
+
+kubectl create configmap fortune-config --from-literal=sleep-interval=25
+kubectl create configmap myconfigmap --from-literal=foo=bar --from-literal=bar=baz --from-literal=one=two
+kubectl get configmap fortune-config
+kubectl describe configmap fortune-config
+kubectl get configmap myconfigmap -o yaml
+
+kubectl get configmap fortune-config -o yaml > fortune-config.yaml
+kubectl delete configmaps fortune-config
+kubectl create -f fortune-config.yaml
+kubectl get configmaps fortune-config -o yaml
+
+kubectl create configmap my-config --from-file=config-file.conf
+kubectl get configmaps my-config -o yaml
+
+kubectl delete configmaps my-config
+kubectl create configmap my-config --from-file=customkey=config-file.conf
+kubectl get configmaps my-config -o yaml
+
+kubectl create configmap my-config --from-file=./config-opts
+
+kubectl create configmap my-config --from-file=foo.json --from-file=bar=foobar.conf --from-file=config-opts/ --from-literal=some=thing
+
+kubectl delete configmaps myconfigmap
+kubectl delete configmaps my-config
+
+kubectl create -f fortune-pod-env-configmap.yaml
+kubectl create -f fortune-pod-args-configmap.yaml
+
+# configMap as files in the target volume
+kubectl delete configmaps fortune-config
+kubectl create configmap fortune-config --from-file=configmap-files
+
+kubectl create -f fortune-pod-configmap-volume.yaml
+kubectl exec fortune-configmap-volume -c web-server -- ls /etc/nginx/conf.d
+kubectl exec fortune-configmap-volume -c web-server -- ls /tmp/whole-fortune-config-volume
+curl -H "Accept-Encoding: gzip" -I localhost:8080
+
+kubectl create -f fortune-pod-configmap-volume-with-items.yaml
+kubectl exec fortune-configmap-volume-with-items -c web-server -- ls /etc/nginx/conf.d/
+kubectl exec fortune-configmap-volume-with-items -c web-server -- cat /etc/nginx/conf.d/gzip.conf
+
+kubectl edit configmap fortune-config
+kubectl exec fortune-configmap-volume -c web-server -- cat /etc/nginx/conf.d/my-nginx-config.conf
+kubectl exec fortune-configmap-volume -c web-server -- nginx -s reload
+kubectl exec fortune-configmap-volume -c web-server -- ls -al /etc/nginx/conf.d/
+
+
+# Create the local directory
+mkdir -p configure-pod-container/configmap/
+
+# Download the sample files into `configure-pod-container/configmap/` directory
+wget https://kubernetes.io/examples/configmap/game.properties -O configure-pod-container/configmap/game.properties
+wget https://kubernetes.io/examples/configmap/ui.properties -O configure-pod-container/configmap/ui.properties
+
+# Create the configmap
+kubectl create configmap game-config --from-file=configure-pod-container/configmap/
+
+# Env-files contain a list of environment variables.
+wget https://kubernetes.io/examples/configmap/game-env-file.properties -O configure-pod-container/configmap/game-env-file.properties
+cat configure-pod-container/configmap/game-env-file.properties
+kubectl create configmap game-config-env-file --from-env-file=configure-pod-container/configmap/game-env-file.properties
+kubectl get configmap game-config-env-file -o yaml
+
+
